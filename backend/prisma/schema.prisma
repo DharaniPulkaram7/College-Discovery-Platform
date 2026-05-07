@@ -1,0 +1,165 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  firstName         String?
+  lastName          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  savedColleges     SavedCollege[]
+  comparisons       Comparison[]
+  reviews           Review[]
+  
+  @@map("users")
+}
+
+model College {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  description       String?
+  location          String
+  city              String
+  state             String
+  country           String
+  websiteUrl        String?
+  
+  // Academic Info
+  established       Int?
+  affiliationBody   String?
+  
+  // Financial Info
+  averageFees       Float
+  placement         Float         // Placement percentage
+  rating            Float         // Out of 5
+  reviewCount       Int           @default(0)
+  
+  // Media
+  logoUrl           String?
+  bannerUrl         String?
+  
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  courses           Course[]
+  placements        Placement[]
+  reviews           Review[]
+  savedBy           SavedCollege[]
+  comparisons       CollegeComparison[]
+  
+  @@index([location])
+  @@index([city])
+  @@index([state])
+  @@map("colleges")
+}
+
+model Course {
+  id                String   @id @default(cuid())
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  
+  name              String
+  duration          String   // e.g., "4 years"
+  specialization    String?
+  eligibility       String?
+  cutoff            Float?   // Merit cutoff
+  fees              Float?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([collegeId, name])
+  @@map("courses")
+}
+
+model Placement {
+  id                String   @id @default(cuid())
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  
+  year              Int
+  totalStudents     Int
+  placed            Int
+  avgPackage        Float
+  maxPackage        Float
+  minPackage        Float
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([collegeId, year])
+  @@map("placements")
+}
+
+model Review {
+  id                String   @id @default(cuid())
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  rating            Int      // 1-5
+  title             String
+  content           String
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("reviews")
+}
+
+model SavedCollege {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime @default(now())
+  
+  @@unique([userId, collegeId])
+  @@map("saved_colleges")
+}
+
+model Comparison {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  colleges          CollegeComparison[]
+  
+  @@map("comparisons")
+}
+
+model CollegeComparison {
+  id                String   @id @default(cuid())
+  comparisonId      String
+  comparison        Comparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+  
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  
+  addedAt           DateTime @default(now())
+  
+  @@unique([comparisonId, collegeId])
+  @@map("college_comparisons")
+}
